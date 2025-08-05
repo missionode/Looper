@@ -95,7 +95,7 @@ const Looper = {
     replaceVars(template) {
         return template.replace(/\$\.(\w+)/g, (_, v) => {
             let val = this.context[v];
-            return this.isSafeHTML(val) ? val : this.escapeHTML(val);
+            return this.isSafeHTML(val) ? val.slice(8) : this.escapeHTML(val);
         });
     },
 
@@ -122,7 +122,7 @@ Looper.preload(
 
 Looper.render();
 
-// Example of re-render on button click
+// ✅ Attach event AFTER render so the element exists
 document.getElementById("changeBtn").addEventListener("click", () => {
     Looper.rerender({
         description: "🚀 The future is near. Looper will change how you build fast, secure, dynamic web pages."
