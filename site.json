@@ -2,28 +2,23 @@
     "templates": {
         "logo": "<div class='logo'>🚀</div>",
         "header": "<h1>$.title</h1><h3>$.tagline</h3>",
-        "body": "<p>$.description</p>",
+        "body": "<p>Edit the tagline below:</p><input type='text' data-bind='tagline'>{{if $.showFeatures}}{{features}}{{end}}",
         "menu": "<ul>$.menuItems[<li><a href='$.url'>$.label</a></li>]</ul>",
         "features": "<div class='features'><h2>Features</h2><ul>$.features[<li>$.name</li>]</ul></div>",
-        "social": "<div class='social'>Follow us: $.socialLinks[<a href='$.url' target='_blank'>$.platform</a> ]</div>",
-        "footer": "<button data-onclick='changeMsg'>Change Message</button>"
+        "footer": "<button data-onclick='toggleFeatures'>Toggle Features</button>"
     },
     "vars": {
         "title": "Coming Soon",
         "tagline": "Fast. Secure. Dynamic.",
-        "description": "Looper is a high-performance JavaScript template engine...",
+        "showFeatures": true,
         "menuItems": [
             { "label": "Home", "url": "/" },
             { "label": "About", "url": "/about" }
         ],
         "features": [
-            { "name": "Ultra-fast rendering" },
-            { "name": "JSON-driven templates" },
-            { "name": "Secure HTML escaping" }
-        ],
-        "socialLinks": [
-            { "platform": "Twitter", "url": "https://twitter.com" },
-            { "platform": "LinkedIn", "url": "https://linkedin.com" }
+            { "name": "Two-way data binding" },
+            { "name": "Live JSON updates" },
+            { "name": "Components & conditionals" }
         ]
     }
 }
