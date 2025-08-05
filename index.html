@@ -50,12 +50,13 @@
 
 <script>
 /* ================================
-   Looper Framework v1.0
+   Looper Framework v1.1
    ================================ */
 const Looper = {
     context: {},
     templates: {},
     domRefs: {},
+    varMap: {},
 
     escapeHTML(str) {
         return String(str)
@@ -70,6 +71,17 @@ const Looper = {
         this.templates = templates;
         this.context = vars;
         this.domRefs = {};
+        this.varMap = {};
+
+        // Build a variable → template key map
+        for (let key in templates) {
+            let matches = templates[key].match(/\$\.(\w+)/g) || [];
+            matches.forEach(m => {
+                let varName = m.slice(2); // remove "$."
+                if (!this.varMap[varName]) this.varMap[varName] = [];
+                this.varMap[varName].push(key);
+            });
+        }
     },
 
     render(root = document.body) {
@@ -85,9 +97,11 @@ const Looper = {
 
     rerender(changes) {
         Object.assign(this.context, changes);
-        for (let key in changes) {
-            if (this.domRefs[key]) {
-                this.domRefs[key].innerHTML = this.replaceVars(this.templates[key]);
+        for (let varName in changes) {
+            if (this.varMap[varName]) {
+                this.varMap[varName].forEach(tKey => {
+                    this.domRefs[tKey].innerHTML = this.replaceVars(this.templates[tKey]);
+                });
             }
         }
     },
@@ -122,7 +136,7 @@ Looper.preload(
 
 Looper.render();
 
-// ✅ Attach event AFTER render so the element exists
+// ✅ Now works — Looper knows which template contains "description"
 document.getElementById("changeBtn").addEventListener("click", () => {
     Looper.rerender({
         description: "🚀 The future is near. Looper will change how you build fast, secure, dynamic web pages."
