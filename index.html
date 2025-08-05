@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Looper - Coming Soon</title>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: radial-gradient(circle at center, #0a0a0a, #000000);
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        text-align: center;
+    }
+    .logo {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: #00d9ff;
+    }
+    h1 {
+        font-size: 3rem;
+        margin: 0;
+    }
+    p {
+        max-width: 500px;
+        font-size: 1.1rem;
+        color: #cccccc;
+    }
+    button {
+        background: #00d9ff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1rem;
+        margin-top: 20px;
+        cursor: pointer;
+        border-radius: 5px;
+        color: #000;
+        transition: background 0.3s;
+    }
+    button:hover {
+        background: #00aacc;
+    }
+</style>
+</head>
+<body>
+
+<script>
+/* ================================
+   Looper Framework v1.0
+   ================================ */
+const Looper = {
+    context: {},
+    templates: {},
+    domRefs: {},
+
+    escapeHTML(str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
+    preload(templates, vars) {
+        this.templates = templates;
+        this.context = vars;
+        this.domRefs = {};
+    },
+
+    render(root = document.body) {
+        for (let key in this.templates) {
+            let html = this.replaceVars(this.templates[key]);
+            let wrapper = document.createElement("div");
+            wrapper.setAttribute("data-template", key);
+            wrapper.innerHTML = html;
+            root.appendChild(wrapper);
+            this.domRefs[key] = wrapper;
+        }
+    },
+
+    rerender(changes) {
+        Object.assign(this.context, changes);
+        for (let key in changes) {
+            if (this.domRefs[key]) {
+                this.domRefs[key].innerHTML = this.replaceVars(this.templates[key]);
+            }
+        }
+    },
+
+    replaceVars(template) {
+        return template.replace(/\$\.(\w+)/g, (_, v) => {
+            let val = this.context[v];
+            return this.isSafeHTML(val) ? val : this.escapeHTML(val);
+        });
+    },
+
+    isSafeHTML(val) {
+        return typeof val === "string" && val.startsWith("__HTML__");
+    }
+};
+
+/* ================================
+   Demo: Coming Soon Website
+   ================================ */
+Looper.preload(
+    {
+        logo: `<div class="logo">🚀</div>`,
+        header: `<h1>$.title</h1>`,
+        body: `<p>$.description</p>`,
+        footer: `<button id="changeBtn">Change Message</button>`
+    },
+    {
+        title: "Coming Soon",
+        description: "Looper is a high-performance JavaScript template engine that loads designs from JSON, preloads variables, renders instantly, and re-renders only what changes — no page reloads."
+    }
+);
+
+Looper.render();
+
+// Example of re-render on button click
+document.getElementById("changeBtn").addEventListener("click", () => {
+    Looper.rerender({
+        description: "🚀 The future is near. Looper will change how you build fast, secure, dynamic web pages."
+    });
+});
+</script>
+
+</body>
+</html>
