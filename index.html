@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Looper - Coming Soon</title>
+<title>Looper v2 - Coming Soon</title>
 <style>
     body {
         margin: 0;
@@ -50,13 +50,14 @@
 
 <script>
 /* ================================
-   Looper Framework v1.1
+   Looper Framework v2.0
    ================================ */
 const Looper = {
     context: {},
     templates: {},
     domRefs: {},
     varMap: {},
+    events: {},
 
     escapeHTML(str) {
         return String(str)
@@ -67,17 +68,18 @@ const Looper = {
             .replace(/'/g, "&#039;");
     },
 
-    preload(templates, vars) {
+    preload(templates, vars, events = {}) {
         this.templates = templates;
         this.context = vars;
         this.domRefs = {};
+        this.events = events;
         this.varMap = {};
 
         // Build a variable → template key map
         for (let key in templates) {
             let matches = templates[key].match(/\$\.(\w+)/g) || [];
             matches.forEach(m => {
-                let varName = m.slice(2); // remove "$."
+                let varName = m.slice(2);
                 if (!this.varMap[varName]) this.varMap[varName] = [];
                 this.varMap[varName].push(key);
             });
@@ -93,6 +95,7 @@ const Looper = {
             root.appendChild(wrapper);
             this.domRefs[key] = wrapper;
         }
+        this.bindEvents();
     },
 
     rerender(changes) {
@@ -104,10 +107,21 @@ const Looper = {
                 });
             }
         }
+        this.bindEvents();
     },
 
     replaceVars(template) {
-        return template.replace(/\$\.(\w+)/g, (_, v) => {
+        // Loop syntax: $.arrayName[<li>$.subVar</li>]
+        return template.replace(/\$\.(\w+)\[(.*?)\]/gs, (_, arrName, loopTpl) => {
+            let arr = this.context[arrName];
+            if (!Array.isArray(arr)) return "";
+            return arr.map(item => {
+                return loopTpl.replace(/\$\.(\w+)/g, (_, v) => {
+                    let val = item[v];
+                    return this.isSafeHTML(val) ? val.slice(8) : this.escapeHTML(val);
+                });
+            }).join("");
+        }).replace(/\$\.(\w+)/g, (_, v) => {
             let val = this.context[v];
             return this.isSafeHTML(val) ? val.slice(8) : this.escapeHTML(val);
         });
@@ -115,6 +129,15 @@ const Looper = {
 
     isSafeHTML(val) {
         return typeof val === "string" && val.startsWith("__HTML__");
+    },
+
+    bindEvents() {
+        document.querySelectorAll("[data-onclick]").forEach(el => {
+            let fnName = el.getAttribute("data-onclick");
+            if (typeof this.events[fnName] === "function") {
+                el.onclick = this.events[fnName];
+            }
+        });
     }
 };
 
@@ -126,22 +149,31 @@ Looper.preload(
         logo: `<div class="logo">🚀</div>`,
         header: `<h1>$.title</h1>`,
         body: `<p>$.description</p>`,
-        footer: `<button id="changeBtn">Change Message</button>`
+        menu: `<ul>$.menuItems[<li><a href='$.url'>$.label</a></li>]</ul>`,
+        footer: `<button data-onclick="changeMsg">Change Message</button>`
     },
     {
         title: "Coming Soon",
-        description: "Looper is a high-performance JavaScript template engine that loads designs from JSON, preloads variables, renders instantly, and re-renders only what changes — no page reloads."
+        description: "Looper is a high-performance JavaScript template engine that loads designs from JSON, preloads variables, renders instantly, and re-renders only what changes — no page reloads.",
+        menuItems: [
+            { label: "Home", url: "/" },
+            { label: "About", url: "/about" }
+        ]
+    },
+    {
+        changeMsg: () => {
+            Looper.rerender({
+                description: "🚀 The future is near. Looper will change how you build fast, secure, dynamic web pages.",
+                menuItems: [
+                    { label: "Dashboard", url: "/dashboard" },
+                    { label: "Contact", url: "/contact" }
+                ]
+            });
+        }
     }
 );
 
 Looper.render();
-
-// ✅ Now works — Looper knows which template contains "description"
-document.getElementById("changeBtn").addEventListener("click", () => {
-    Looper.rerender({
-        description: "🚀 The future is near. Looper will change how you build fast, secure, dynamic web pages."
-    });
-});
 </script>
 
 </body>
