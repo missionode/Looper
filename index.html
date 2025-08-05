@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Looper v4 - Coming Soon</title>
+<title>Looper v6 - Two-Way Binding</title>
 <style>
     body {
         margin: 0;
@@ -17,58 +17,29 @@
         text-align: center;
         padding-top: 40px;
     }
-    .logo {
-        font-size: 4rem;
-        margin-bottom: 10px;
-        color: #00d9ff;
-    }
+    .logo { font-size: 4rem; margin-bottom: 10px; color: #00d9ff; }
     h1 { font-size: 3rem; margin: 0; }
     h3 { font-size: 1.5rem; color: #aaaaaa; margin: 5px 0 20px; }
-    p {
-        max-width: 500px;
-        font-size: 1.1rem;
-        color: #cccccc;
-    }
-    ul {
-        list-style: none;
-        padding: 0;
-        display: flex;
-        gap: 15px;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    ul li a {
-        text-decoration: none;
-        color: #00d9ff;
-        font-weight: bold;
-        transition: color 0.3s;
-    }
+    p { max-width: 500px; font-size: 1.1rem; color: #cccccc; }
+    ul { list-style: none; padding: 0; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+    ul li a { text-decoration: none; color: #00d9ff; font-weight: bold; transition: color 0.3s; }
     ul li a:hover { color: #00aacc; }
     .features ul { flex-direction: column; align-items: center; }
-    .social a {
-        color: #00d9ff;
-        margin: 0 5px;
-        text-decoration: none;
-    }
-    .social a:hover { color: #00aacc; }
     button {
-        background: #00d9ff;
-        border: none;
-        padding: 10px 20px;
-        font-size: 1rem;
-        margin-top: 20px;
-        cursor: pointer;
-        border-radius: 5px;
-        color: #000;
+        background: #00d9ff; border: none; padding: 10px 20px; font-size: 1rem;
+        margin-top: 20px; cursor: pointer; border-radius: 5px; color: #000;
         transition: background 0.3s;
     }
     button:hover { background: #00aacc; }
-
-    /* Animation */
-    [data-template] {
-        opacity: 1;
-        transition: opacity 0.5s ease-in-out;
+    input {
+        padding: 8px;
+        border-radius: 5px;
+        border: none;
+        margin-top: 10px;
+        font-size: 1rem;
+        text-align: center;
     }
+    [data-template] { opacity: 1; transition: opacity 0.5s ease-in-out; }
     [data-template].fade-out { opacity: 0; }
 </style>
 </head>
@@ -76,7 +47,7 @@
 
 <script>
 /* ================================
-   Looper Framework v4.0
+   Looper Framework v6.0
    ================================ */
 const Looper = {
     context: {},
@@ -101,6 +72,7 @@ const Looper = {
         this.domRefs = {};
         this.events = events;
         this.varMap = {};
+
         for (let key in templates) {
             let matches = templates[key].match(/\$\.(\w+)/g) || [];
             matches.forEach(m => {
@@ -114,7 +86,7 @@ const Looper = {
     render(root = document.body) {
         root.innerHTML = "";
         for (let key in this.templates) {
-            let html = this.replaceVars(this.templates[key]);
+            let html = this.parseTemplate(this.templates[key]);
             let wrapper = document.createElement("div");
             wrapper.setAttribute("data-template", key);
             wrapper.innerHTML = html;
@@ -122,6 +94,7 @@ const Looper = {
             this.domRefs[key] = wrapper;
         }
         this.bindEvents();
+        this.bindInputs();
     },
 
     rerender(changes) {
@@ -132,17 +105,34 @@ const Looper = {
                     let el = this.domRefs[tKey];
                     el.classList.add("fade-out");
                     setTimeout(() => {
-                        el.innerHTML = this.replaceVars(this.templates[tKey]);
+                        el.innerHTML = this.parseTemplate(this.templates[tKey]);
                         el.classList.remove("fade-out");
                         this.bindEvents();
+                        this.bindInputs();
                     }, 500);
                 });
             }
         }
     },
 
-    replaceVars(template) {
-        return template.replace(/\$\.(\w+)\[(.*?)\]/gs, (_, arrName, loopTpl) => {
+    parseTemplate(template) {
+        // Conditionals
+        template = template.replace(/\{\{if ([^}]+)\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{end\}\}/g,
+            (_, condition, truePart, falsePart) => {
+                return this.evalCondition(condition) ? truePart : falsePart;
+            });
+        template = template.replace(/\{\{if ([^}]+)\}\}([\s\S]*?)\{\{end\}\}/g,
+            (_, condition, truePart) => {
+                return this.evalCondition(condition) ? truePart : "";
+            });
+
+        // Components
+        template = template.replace(/\{\{(\w+)\}\}/g, (_, compName) => {
+            return this.templates[compName] ? this.parseTemplate(this.templates[compName]) : "";
+        });
+
+        // Loops
+        template = template.replace(/\$\.(\w+)\[(.*?)\]/gs, (_, arrName, loopTpl) => {
             let arr = this.context[arrName];
             if (!Array.isArray(arr)) return "";
             return arr.map(item => {
@@ -151,10 +141,23 @@ const Looper = {
                     return this.isSafeHTML(val) ? val.slice(8) : this.escapeHTML(val);
                 });
             }).join("");
-        }).replace(/\$\.(\w+)/g, (_, v) => {
+        });
+
+        // Variables
+        template = template.replace(/\$\.(\w+)/g, (_, v) => {
             let val = this.context[v];
             return this.isSafeHTML(val) ? val.slice(8) : this.escapeHTML(val);
         });
+
+        return template;
+    },
+
+    evalCondition(condition) {
+        try {
+            return Function("data", `with(data) { return ${condition}; }`)(this.context);
+        } catch {
+            return false;
+        }
     },
 
     isSafeHTML(val) { return typeof val === "string" && val.startsWith("__HTML__"); },
@@ -164,6 +167,19 @@ const Looper = {
             let fnName = el.getAttribute("data-onclick");
             if (typeof this.events[fnName] === "function") {
                 el.onclick = this.events[fnName];
+            }
+        });
+    },
+
+    bindInputs() {
+        document.querySelectorAll("[data-bind]").forEach(input => {
+            let varName = input.getAttribute("data-bind");
+            if (this.context[varName] !== undefined) {
+                input.value = this.context[varName];
+                input.addEventListener("input", e => {
+                    this.context[varName] = e.target.value;
+                    this.rerender({ [varName]: e.target.value });
+                });
             }
         });
     },
@@ -192,18 +208,12 @@ const Looper = {
    Demo Events
    ================================ */
 Looper.events = {
-    changeMsg: () => {
-        Looper.rerender({
-            description: "🚀 The future is here. Looper now animates updates smoothly.",
-            features: [
-                { name: "Live JSON updates" },
-                { name: "Smooth animations" },
-                { name: "Nested loops" }
-            ]
-        });
+    toggleFeatures: () => {
+        Looper.rerender({ showFeatures: !Looper.context.showFeatures });
     }
 };
 
+// Load JSON every 5 seconds
 Looper.loadFromJSON("site.json", 5000);
 </script>
 
