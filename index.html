@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Looper v6 - Two-Way Binding</title>
+<title>Looper v6 - Two-Way Binding & Toggle Fix</title>
 <style>
     body {
         margin: 0;
@@ -40,16 +39,13 @@
         font-size: 1rem;
         text-align: center;
     }
-    [data-template] { opacity: 1; transition: opacity 0.5s ease-in-out; }
+    [data-template] { opacity: 1; transition: opacity 0.3s ease-in-out; }
     [data-template].fade-out { opacity: 0; }
 </style>
 </head>
 <body>
 
 <script>
-/* ================================
-   Looper Framework v6.0
-   ================================ */
 const Looper = {
     context: {},
     templates: {},
@@ -100,20 +96,26 @@ const Looper = {
 
     rerender(changes) {
         Object.assign(this.context, changes);
+
+        // Collect affected templates
+        let affectedTemplates = new Set();
         for (let varName in changes) {
             if (this.varMap[varName]) {
-                this.varMap[varName].forEach(tKey => {
-                    let el = this.domRefs[tKey];
-                    el.classList.add("fade-out");
-                    setTimeout(() => {
-                        el.innerHTML = this.parseTemplate(this.templates[tKey]);
-                        el.classList.remove("fade-out");
-                        this.bindEvents();
-                        this.bindInputs();
-                    }, 500);
-                });
+                this.varMap[varName].forEach(tKey => affectedTemplates.add(tKey));
             }
         }
+
+        // Re-render affected templates fully
+        affectedTemplates.forEach(tKey => {
+            let el = this.domRefs[tKey];
+            el.classList.add("fade-out");
+            setTimeout(() => {
+                el.innerHTML = this.parseTemplate(this.templates[tKey]);
+                el.classList.remove("fade-out");
+                this.bindEvents();
+                this.bindInputs();
+            }, 300);
+        });
     },
 
     parseTemplate(template) {
@@ -205,16 +207,12 @@ const Looper = {
     }
 };
 
-/* ================================
-   Demo Events
-   ================================ */
 Looper.events = {
     toggleFeatures: () => {
         Looper.rerender({ showFeatures: !Looper.context.showFeatures });
     }
 };
 
-// Load JSON every 5 seconds
 Looper.loadFromJSON("site.json", 5000);
 </script>
 
