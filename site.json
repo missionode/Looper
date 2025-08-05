@@ -2,7 +2,7 @@
     "templates": {
         "logo": "<div class='logo'>🚀</div>",
         "header": "<h1>$.title</h1><h3>$.tagline</h3>",
-        "body": "<p>Edit the tagline below:</p><input type='text' data-bind='tagline'>{{if $.showFeatures}}{{features}}{{end}}",
+        "body": "<p>Edit the tagline below:</p><input type='text' data-bind='tagline'><div id='featuresWrap' class='collapsible'>{{if $.showFeatures}}{{features}}{{end}}</div>",
         "menu": "<ul>$.menuItems[<li><a href='$.url'>$.label</a></li>]</ul>",
         "features": "<div class='features'><h2>Features</h2><ul>$.features[<li>$.name</li>]</ul></div>",
         "footer": "<button data-onclick='toggleFeatures'>Toggle Features</button>"
