@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Looper v2 - Coming Soon</title>
+<title>Looper v3 - Coming Soon</title>
 <style>
     body {
         margin: 0;
@@ -30,6 +30,22 @@
         font-size: 1.1rem;
         color: #cccccc;
     }
+    ul {
+        list-style: none;
+        padding: 0;
+        margin-top: 15px;
+        display: flex;
+        gap: 15px;
+    }
+    ul li a {
+        text-decoration: none;
+        color: #00d9ff;
+        font-weight: bold;
+        transition: color 0.3s;
+    }
+    ul li a:hover {
+        color: #00aacc;
+    }
     button {
         background: #00d9ff;
         border: none;
@@ -50,7 +66,7 @@
 
 <script>
 /* ================================
-   Looper Framework v2.0
+   Looper Framework v3.0
    ================================ */
 const Looper = {
     context: {},
@@ -58,6 +74,7 @@ const Looper = {
     domRefs: {},
     varMap: {},
     events: {},
+    lastData: "",
 
     escapeHTML(str) {
         return String(str)
@@ -75,7 +92,7 @@ const Looper = {
         this.events = events;
         this.varMap = {};
 
-        // Build a variable → template key map
+        // Build var → template map
         for (let key in templates) {
             let matches = templates[key].match(/\$\.(\w+)/g) || [];
             matches.forEach(m => {
@@ -87,6 +104,7 @@ const Looper = {
     },
 
     render(root = document.body) {
+        root.innerHTML = ""; // clear old
         for (let key in this.templates) {
             let html = this.replaceVars(this.templates[key]);
             let wrapper = document.createElement("div");
@@ -111,7 +129,7 @@ const Looper = {
     },
 
     replaceVars(template) {
-        // Loop syntax: $.arrayName[<li>$.subVar</li>]
+        // Loop syntax
         return template.replace(/\$\.(\w+)\[(.*?)\]/gs, (_, arrName, loopTpl) => {
             let arr = this.context[arrName];
             if (!Array.isArray(arr)) return "";
@@ -138,42 +156,50 @@ const Looper = {
                 el.onclick = this.events[fnName];
             }
         });
+    },
+
+    async loadFromJSON(url, pollInterval = 0) {
+        const fetchData = async () => {
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const jsonStr = JSON.stringify(data);
+
+                if (jsonStr !== this.lastData) {
+                    this.lastData = jsonStr;
+                    this.preload(data.templates, data.vars, this.events);
+                    this.render();
+                }
+            } catch (e) {
+                console.error("Looper JSON load error:", e);
+            }
+        };
+
+        await fetchData();
+
+        if (pollInterval > 0) {
+            setInterval(fetchData, pollInterval);
+        }
     }
 };
 
 /* ================================
    Demo: Coming Soon Website
    ================================ */
-Looper.preload(
-    {
-        logo: `<div class="logo">🚀</div>`,
-        header: `<h1>$.title</h1>`,
-        body: `<p>$.description</p>`,
-        menu: `<ul>$.menuItems[<li><a href='$.url'>$.label</a></li>]</ul>`,
-        footer: `<button data-onclick="changeMsg">Change Message</button>`
-    },
-    {
-        title: "Coming Soon",
-        description: "Looper is a high-performance JavaScript template engine that loads designs from JSON, preloads variables, renders instantly, and re-renders only what changes — no page reloads.",
-        menuItems: [
-            { label: "Home", url: "/" },
-            { label: "About", url: "/about" }
-        ]
-    },
-    {
-        changeMsg: () => {
-            Looper.rerender({
-                description: "🚀 The future is near. Looper will change how you build fast, secure, dynamic web pages.",
-                menuItems: [
-                    { label: "Dashboard", url: "/dashboard" },
-                    { label: "Contact", url: "/contact" }
-                ]
-            });
-        }
+Looper.events = {
+    changeMsg: () => {
+        Looper.rerender({
+            description: "🚀 The future is near. Looper will change how you build fast, secure, dynamic web pages.",
+            menuItems: [
+                { label: "Dashboard", url: "/dashboard" },
+                { label: "Contact", url: "/contact" }
+            ]
+        });
     }
-);
+};
 
-Looper.render();
+// Load from external JSON (poll every 5s)
+Looper.loadFromJSON("site.json", 5000);
 </script>
 
 </body>
