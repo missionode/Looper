@@ -1,0 +1,17 @@
+{
+    "templates": {
+        "logo": "<div class='logo'>🚀</div>",
+        "header": "<h1>$.title</h1>",
+        "body": "<p>$.description</p>",
+        "menu": "<ul>$.menuItems[<li><a href='$.url'>$.label</a></li>]</ul>",
+        "footer": "<button data-onclick='changeMsg'>Change Message</button>"
+    },
+    "vars": {
+        "title": "Coming Soon",
+        "description": "Looper is a high-performance JavaScript template engine...",
+        "menuItems": [
+            { "label": "Home", "url": "/" },
+            { "label": "About", "url": "/about" }
+        ]
+    }
+}
